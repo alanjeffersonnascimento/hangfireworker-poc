@@ -1,4 +1,24 @@
+using Hangfire;
+using Hangfire.SqlServer;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Hangfire services.
+builder.Services.AddHangfire(configuration => configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection"), new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        }));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer();
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -16,9 +36,20 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseHangfireDashboard();
+
+BackgroundJobClient backgroundJobs = new BackgroundJobClient();
+backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
+
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapHangfireDashboard();
+});
 
 app.MapRazorPages();
 
