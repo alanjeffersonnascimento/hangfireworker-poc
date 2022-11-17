@@ -1,4 +1,6 @@
+using Cronos;
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.SqlServer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,8 +40,17 @@ app.UseStaticFiles();
 
 app.UseHangfireDashboard();
 
-BackgroundJobClient backgroundJobs = new BackgroundJobClient();
-backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
+//BackgroundJobClient backgroundJobs = new BackgroundJobClient();
+//backgroundJobs.Enqueue(() => Console.WriteLine("Hello world from Hangfire!"));
+
+var manager = new RecurringJobManager();
+manager.AddOrUpdate("thursday-job", Job.FromExpression(() => Console.Write("Execution from thursday-job")), "20 14 * * 4");
+
+//RecurringJob.RemoveIfExists("some-id");
+//RecurringJob.Trigger("some-id");
+
+CronExpression expression = CronExpression.Parse("* * * * *");
+DateTime? nextUtc = expression.GetNextOccurrence(DateTime.UtcNow);
 
 app.UseRouting();
 
